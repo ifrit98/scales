@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 def logical2idx(x):
     x = np.asarray(x)
@@ -15,8 +16,36 @@ def binary(s, padlen=12):
 
 binary_inc = lambda b: binary(int(b, 2) + 1)
 
+def rotate(l, n=1):
+    return l[n:] + l[:n]
+
+def autocorr(x):
+    ints = []
+    for n in range(len(x)):
+        y = rotate(x, n)
+        m = sum(np.array(x) * np.array(y))
+        if n == 6:
+            m = m // 2
+        ints.append(m)
+    return ints
+
+
 notes = ['C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab', 'A', 'Bb', 'B']
 NOTES = np.asarray(notes)
+
+interval_nms = [
+    "m2",
+    "M2",
+    "m3",
+    "M3",
+    "P4",
+    "TT",
+    "P5",
+    "m6",
+    "M6",
+    "m7",
+    "M7"
+]
 
 class Scale:
     def __init__(self, xs):
@@ -60,8 +89,17 @@ class Scale:
         b = "\nBinary    : {}".format(self.bin)
         i = "\nSpecies   : {}".format(self.int)
         s = "\nClass     : {}".format(self.cls)
-        t = "\nIntervals : {}".format(self.intervals)
+        t = "\nIntervals : {}".format(list(self.intervals.values()))
         return n + b + i + s + t
+
+    def __dict__(self):
+        return {
+            'notes': self.notes,
+            'binary': self.bin,
+            'species': self.int,
+            'class': self.cls,
+            'intervals': list(self.intervals.values())
+        }
 
 INTERVALS = {
     "m2": Scale("110000000000"),
@@ -77,27 +115,20 @@ INTERVALS = {
     "M7": Scale("110000000000"),
 }
 
-interval_nms = np.asarray(list(INTERVALS))
+
 intervals = np.asarray(list(INTERVALS.values()))
 
 def make_scale(integer):
     return Scale(binary(integer))
 
-def rotate(l, n=1):
-    return l[n:] + l[:n]
-
-def autocorr(x):
-    ints = []
-    for n in range(len(x)):
-        y = rotate(x, n)
-        m = sum(np.array(x) * np.array(y))
-        if n == 6:
-            m = m // 2
-        ints.append(m)
-    return ints
-
+def make_all_scales():
+    return pd.DataFrame([make_scale(i).__dict__() for i in range(4096)])
 
 if False:
-    s = make_scale(1717)
-    s = make_scale(2773)
-    print(s)
+    ds = []
+    for i in range(4096):
+        s = make_scale(i)
+        ds.append(s.__dict__())
+        print(s)
+        print()
+    pd.DataFrame(ds)
